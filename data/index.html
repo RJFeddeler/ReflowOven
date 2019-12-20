@@ -1,0 +1,432 @@
+<!doctype html>
+<html lange="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha256-+N4/V/SbAFiW1MPBCXnfnP9QSN3+Keu+NlB+0ev/YKQ=" crossorigin="anonymous" />
+		<link rel="stylesheet" href="style.css">
+
+		<title>Reflow Oven</title>
+	</head>
+	<body>
+		<nav class="navbar navbar-dark bg-dark fixed-top flex-md-nowrap p-0 shadow">
+  			<div class="navbar-brand col-sm-3 col-md-2 mr-0">Reflow Oven Controller</div>
+  			<ul class="navbar-nav px-3">
+				<li class="nav-item text-nowrap">
+					<a id="btnSettings" class="nav-link" href="#"><i class="fas fa-cogs fa-2x"></i></a>
+				</li>
+			</ul>
+		</nav>
+
+		<div class="container-fluid">
+			<div class="row">
+				<nav class="col-md-3 d-none d-md-block sidebar">
+					<div class="sidebar-sticky">
+						<div class="card">
+							<div class="card-header text-center">
+								Controls
+							</div>
+							<div class="card-body padding-10 flex-v">
+								<div id="controls" class="flex">
+									<button id="btnStart" type="button" class="btn" disabled><i class="fas fa-play-circle fa-3x"></i></button>
+									<button id="btnPause" type="button" class="btn" disabled><i class="fas fa-pause-circle fa-3x"></i></button>
+									<button id="btnStop" type="button" class="btn" disabled><i class="fas fa-stop-circle fa-3x"></i></button>
+								</div>
+								<div><b>Status: </b><span id="lblStatus"></span></div>
+							</div>
+						</div>
+						<div class="card fill-up">
+							<div class="card-header flex-b">
+								<div></div>
+								<div>Files</div>
+								<div><!--<i class="fas fa-sync-alt"></i>--></div>
+							</div>
+							<div class="card-body">
+								<div class="flex-b"><div></div></div>
+								<ul id="lstProfiles" class="list-group list-group-flush"></ul>
+							</div>
+						</div>
+					</div>
+				</nav>
+			</div>
+			<main role="main" class="col-md-8 ml-sm-auto col-lg-9 px-4">
+				<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+					<h1 class="h2">Dashboard</h1>
+					<div class="btn-toolbar mb-2 mb-md-0">
+						<div class="btn-group mr-2">
+							<!--<button type="button" id="btnRefreshGraph" class="btn btn-sm btn-outline-secondary"><i class="fas fa-sync-alt"></i></button>
+							<button type="button" id="btnClearGraph" class="btn btn-sm btn-outline-secondary"><i class="fas fa-trash-alt"></i></button>-->
+						</div>
+					</div>
+				</div>
+				<div id="overview">
+					<div>
+						Name: <span id="lblName"></span><br>
+						Progress: <span id="lblProgress"></span><br>
+						<br>
+						<p>Temperature: <span id="lblTemperature"></span></p>
+					</div>
+					<div>
+						<canvas id="myPowerChart" width="140" height="100"></canvas>
+					</div>
+				</div>
+
+				<canvas class="my-4 w-100" id="myChart" width="900" height="380"></canvas>
+
+			</main>
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+		<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.min.js" integrity="sha256-qM7QTJSlvtPSxVRjVWNM2OfTAz/3k5ovHOKmKXuYMO4=" crossorigin="anonymous"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
+		<script>
+			var ctx = document.getElementById('myChart').getContext('2d');
+			var chart = new Chart(ctx, {
+				type: 'line',
+				data: {
+					datasets: [{
+						label: 'Live',
+						borderColor: 'rgb(54, 162, 235)',
+						xAxisID: 'x-axis',
+						yAxisID: 'y-axis'
+					}]
+				},
+
+				options: {
+					elements: {
+						point: {
+							radius: 0
+						}
+					},
+					scales: {
+						xAxes: [{
+							type: 'linear',
+							position: 'bottom',
+							id: 'x-axis',
+							beginAtZero: true,
+							ticks: {
+								min: -8,
+								max: 0,
+								stepSize: 1,
+								callback: function(value, index, values) {
+									return value + ':00';
+								}
+							}
+						}],
+						yAxes: [{
+							type: 'linear',
+							position: 'left',
+							id: 'y-axis',
+							beginAtZero: true,
+							ticks: {
+								min: 0,
+								max: 300,
+								stepSize: 50
+							}
+						}]
+					}
+				}
+			});
+
+			var ctxPower = document.getElementById('myPowerChart').getContext('2d');
+			var chartPower = new Chart(ctxPower, {
+				type: 'bar',
+				data: {
+					datasets: [{
+						backgroundColor: 'rgb(54, 162, 235)'
+					}]
+				},
+
+				options: {
+					legend: {
+						display: false
+					},
+					scales: {
+						yAxes: [{
+							display: false,
+							type: 'linear',
+							position: 'left',
+							beginAtZero: true,
+							ticks: {
+								min: 0,
+								max: 100,
+								stepSize: 25
+							}
+						}]
+					}
+				}
+			});
+		</script>
+
+		<script>
+			var connected = false;
+			var lastPowerCount = 0;
+			var profileList = [];
+			var profileStatus, profileName, profileProgress;
+
+			var profileSelected = undefined;
+
+			const socket = new WebSocket('ws://reflowOven.local:81/');
+			socket.addEventListener('open', function (event) {
+				console.log("Socket connected!");
+				connected = true;
+
+				getProfileOverview();
+				getHeaterOverview();
+				getConnectionOverview();
+
+				getProfileList();
+				getGraphData();
+			});
+
+			socket.addEventListener('message', function (event) {
+				var message = event.data;
+				var split = message.indexOf(':');
+
+				var cmd, data, json;
+				if (split > 0) {
+					cmd = message.substring(0, split);
+					data = message.substr(split+1);
+				}
+				else {
+					cmd = message;
+				}
+
+				switch (cmd) {
+					case 'temp':
+						$("#lblTemperature").text(parseFloat(data));
+						break;
+					case 'proList':
+						json = JSON.parse(data); // profileList: []
+						
+						$("#profileList").html('');
+						json.profileList.forEach(function(item){
+							$("#lstProfiles").append('<li class="list-group-item"><div>' + item.substr(item.lastIndexOf('/') + 1) + '</div></li>');
+						});
+
+						$('.list-group li').click(function(e) {
+							e.preventDefault();
+							e.stopPropagation();
+							$that = $(this);
+
+							$that.parent().find('li').removeClass('proActive');
+							$that.addClass('proActive');
+
+							profileSelected = $('.proActive').text();
+
+							$('#btnStart').prop('disabled', false);
+						});
+
+						break;
+					case 'proOverview':
+						json = JSON.parse(data); // status: name: progress: 
+
+						if (json.hasOwnProperty('name')) {
+							profileName = json.name;
+							$('#lblName').text(profileName);
+						}
+						if (json.hasOwnProperty('progress')) {
+							profileProgress = json.progress;
+							if (profileProgress >= 0)
+								$('#lblProgress').text(profileProgress + "%");
+							else
+								$('#lblProgress').text("");
+						}
+
+						if (json.hasOwnProperty('status') && json.status !== profileStatus) {
+							profileStatus = json.status;
+							$('#lblStatus').text(profileStatus);
+
+							switch (profileStatus) {
+								case 'Idle':
+									if (profileSelected != undefined)
+										$("#btnStart").prop('disabled', false);
+									else
+										$("#btnStart").prop('disabled', true);
+
+									$("#btnPause").prop('disabled', true);
+									$("#btnStop").prop('disabled', true);
+									break;
+								case 'Preheating':
+									$("#btnStart").prop('disabled', false);
+									$("#btnPause").prop('disabled', true);
+									$("#btnStop").prop('disabled', false);
+									break;
+								case 'Running':
+									$("#btnStart").prop('disabled', true);
+									$("#btnPause").prop('disabled', false);
+									$("#btnStop").prop('disabled', false);
+									break;
+								case 'Paused':
+									$("#btnStart").prop('disabled', false);
+									$("#btnPause").prop('disabled', true);
+									$("#btnStop").prop('disabled', false);
+									break;
+								case 'Complete':
+									$("#btnStart").prop('disabled', false);
+									$("#btnPause").prop('disabled', true);
+									$("#btnStop").prop('disabled', true);
+									break;
+								case 'Unknown':
+									break;
+							}
+						}
+
+						break;
+					case 'conOverview':
+						json = JSON.parse(data); // {}
+						break;
+					case 'heatOverview':
+						json = JSON.parse(data); // power: []
+
+						if (!json.hasOwnProperty('power'))
+							return;
+
+						chartPower.data.datasets[0].data = [];
+
+						if (lastPowerCount != json.power.length) {
+							chartPower.data.labels = [];
+
+							if (json.power.length >= 1)
+								chartPower.data.labels.push('Top');
+							if (json.power.length >= 2)
+								chartPower.data.labels.push('Bottom');
+							if (json.power.length >= 3)
+								chartPower.data.labels.push('Boost');
+
+							lastPowerCount = json.power.length;
+						}
+
+						json.power.forEach(function(item, index){
+							chartPower.data.datasets[0].data.push(item);
+
+							if (index == 0)
+								chartPower.data.labels.push
+						});
+
+						chartPower.update();
+
+						break;
+					case 'graphPoint':
+						if (chart.data.datasets[0].data.length >= 480)
+							chart.data.datasets[0].data.shift();
+
+						for (let i = 0; i < chart.data.datasets[0].data.length; i++)
+							chart.data.datasets[0].data[i].x -= 0.0165; // 0.99 seconds between samples
+
+						chart.data.datasets[0].data.push({ x: 0, y: parseFloat(data) });
+						$("#lblTemperature").text(parseFloat(data) + "°C");
+
+						chart.update();
+
+						break;
+				}
+			});
+
+			socket.addEventListener('close', function (event) {
+				connected = false;
+			});
+
+			socket.addEventListener('error', function (event) {
+				console.log('Socket Error: ', event.data);
+			});
+
+			function getTemperature() {
+				socket.send('getTemp');
+			}
+
+			function setTemperature(temp) {
+				socket.send('setTemp:' + temp);
+			}
+
+			function getProfileList() {
+				socket.send('getProList');
+			}
+
+			function getProfileOverview() {
+				socket.send('getProOverview');
+			}
+
+			function getHeaterOverview() {
+				socket.send('getHeatOverview');
+			}
+
+			function getConnectionOverview() {
+				socket.send('getConOverview');
+			}
+
+			function getGraphData() {
+				socket.send('getGraphData');
+				chart.data.datasets[0].data = [];
+				chart.update();
+			}
+
+			function clearGraph() {
+				socket.send('clearGraph');
+				chart.data.datasets[0].data = [];
+				chart.update();
+			}
+
+			function startJob(jobName) {
+				if (profileStatus === 'Paused')
+					resumeJob();
+				else {
+					if (profileSelected == undefined)
+						return;
+
+					socket.send('startJob:' + profileSelected);
+				}
+			}
+
+			function pauseJob() {
+				socket.send('pauseJob');
+			}
+
+			function resumeJob() {
+				socket.send('resumeJob');
+			}
+
+			function stopJob() {
+				socket.send('stopJob');
+			}
+
+			function openSettings() {
+
+			}
+
+			function resetWiFiSettings() {
+				socket.send('resetWiFi');
+			}
+
+			$("#resetWiFi").click(resetWiFiSettings);
+			$("#btnSettings").click(openSettings);
+			$("#btnStart").click(startJob);
+			$("#btnPause").click(pauseJob);
+			$("#btnStop").click(stopJob);
+			$("#btnRefreshGraph").click(getGraphData);
+			$("#btnClearGraph").click(clearGraph);
+
+			$("#lstProfiles").click(function() {
+				$('.proActive').removeClass('proActive');
+				profileSelected = undefined;
+				$("#btnStart").prop('disabled', true);
+			});
+
+			(function loadConfig() {
+				var xmlHttp = new XMLHttpRequest();
+				xmlHttp.onreadystatechange = function() {
+					if(xmlHttp.readyState === XMLHttpRequest.DONE && xmlHttp.status === 200) {
+						var json = xmlHttp.response;
+					}
+				}
+				xmlHttp.open("GET", "config");
+				xmlHttp.responseType = "json";
+				xmlHttp.send();
+			})();
+		</script>
+	</body>
+</html>
